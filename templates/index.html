@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Препродакшн Анализатор Сценариев</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #5568d3;
+        }
+
+        .upload-area.dragging {
+            background: #e8ebff;
+            border-color: #4556c0;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .options-section {
+            margin-top: 30px;
+        }
+
+        .option-group {
+            margin-bottom: 25px;
+        }
+
+        .option-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .preset-info {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .format-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .format-option {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .format-option:hover {
+            border-color: #667eea;
+        }
+
+        .format-option.selected {
+            border-color: #667eea;
+            background: #f8f9ff;
+            font-weight: 600;
+        }
+
+        .format-option input[type="radio"] {
+            display: none;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 30px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-text {
+            color: #555;
+            font-size: 1.1em;
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #f0fdf4;
+            border-radius: 12px;
+            border-left: 5px solid #10b981;
+        }
+
+        .result-title {
+            font-size: 1.3em;
+            color: #059669;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .download-btn {
+            flex: 1;
+            padding: 15px 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: background 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #059669;
+        }
+
+        .download-btn.secondary {
+            background: #667eea;
+        }
+
+        .download-btn.secondary:hover {
+            background: #5568d3;
+        }
+
+        .error-section {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #fef2f2;
+            border-radius: 12px;
+            border-left: 5px solid #ef4444;
+        }
+
+        .error-title {
+            font-size: 1.3em;
+            color: #dc2626;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .error-message {
+            color: #991b1b;
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0fdf4;
+            border-radius: 10px;
+            color: #059669;
+        }
+
+        .file-info-icon {
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .card {
+                padding: 25px;
+            }
+
+            .format-options {
+                flex-direction: column;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Препродакшн Анализатор</h1>
+            <p>Автоматизированная обработка сценариев для подготовки препродакшн-документации</p>
+        </div>
+
+        <div class="card">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Нажмите для выбора файла или перетащите сюда</div>
+                    <div class="upload-hint">Поддерживаются форматы: PDF, DOCX (до 120 страниц, макс. 50 МБ)</div>
+                    <input type="file" id="fileInput" name="file" accept=".pdf,.docx" required>
+                </div>
+
+                <div class="file-info" id="fileInfo">
+                    <span class="file-info-icon">✓</span>
+                    <span id="fileName"></span>
+                </div>
+
+                <div class="options-section">
+                    <div class="option-group">
+                        <label class="option-label">Пресет анализа</label>
+                        <select id="presetSelect" name="preset">
+                            {% for key, preset in presets.items() %}
+                            <option value="{{ key }}" {% if key == 'extended' %}selected{% endif %}>
+                                {{ preset.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="preset-info" id="presetInfo"></div>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-label">Формат экспорта</label>
+                        <div class="format-options">
+                            <label class="format-option selected">
+                                <input type="radio" name="format" value="xlsx" checked>
+                                <div>📊 Excel (XLSX)</div>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="format" value="csv">
+                                <div>📝 CSV</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🚀 Обработать сценарий
+                </button>
+            </form>
+
+            <div class="progress-section" id="progressSection">
+                <div class="spinner"></div>
+                <div class="progress-text">Обработка сценария...</div>
+                <div class="progress-text" style="font-size: 0.9em; color: #888; margin-top: 10px;">
+                    Это может занять несколько минут
+                </div>
+            </div>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-title">✅ Обработка завершена!</div>
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="scenesCount">-</span>
+                        <span class="stat-label">Сцен</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="pagesCount">-</span>
+                        <span class="stat-label">Страниц</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="processingTime">-</span>
+                        <span class="stat-label">Время (сек)</span>
+                    </div>
+                </div>
+                <div class="download-buttons">
+                    <a href="#" id="downloadBtn" class="download-btn">
+                        💾 Скачать таблицу
+                    </a>
+                    <a href="#" id="downloadSummaryBtn" class="download-btn secondary">
+                        📈 Скачать статистику
+                    </a>
+                </div>
+            </div>
+
+            <div class="error-section" id="errorSection">
+                <div class="error-title">❌ Ошибка</div>
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const presets = {{ presets | tojson }};
+        
+        // Обработка загрузки файла
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressSection = document.getElementById('progressSection');
+        const resultSection = document.getElementById('resultSection');
+        const errorSection = document.getElementById('errorSection');
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileInfo(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                updateFileInfo(e.target.files[0]);
+            }
+        });
+
+        function updateFileInfo(file) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            fileName.textContent = `${file.name} (${sizeMB} МБ)`;
+            fileInfo.style.display = 'block';
+        }
+
+        // Обновление информации о пресете
+        const presetSelect = document.getElementById('presetSelect');
+        const presetInfo = document.getElementById('presetInfo');
+
+        function updatePresetInfo() {
+            const selectedPreset = presetSelect.value;
+            const preset = presets[selectedPreset];
+            const columns = preset.columns.slice(0, 5).join(', ');
+            const moreColumns = preset.columns.length > 5 ? ` и ещё ${preset.columns.length - 5}` : '';
+            presetInfo.textContent = `Колонки: ${columns}${moreColumns}`;
+        }
+
+        presetSelect.addEventListener('change', updatePresetInfo);
+        updatePresetInfo();
+
+        // Обработка выбора формата
+        const formatOptions = document.querySelectorAll('.format-option');
+        formatOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                formatOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+            });
+        });
+
+        // Обработка отправки формы
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Скрываем предыдущие результаты
+            resultSection.style.display = 'none';
+            errorSection.style.display = 'none';
+            
+            // Показываем прогресс
+            submitBtn.disabled = true;
+            progressSection.style.display = 'block';
+            
+            try {
+                const formData = new FormData(uploadForm);
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                progressSection.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                if (response.ok && result.success) {
+                    // Показываем результаты
+                    document.getElementById('scenesCount').textContent = result.scenes_count;
+                    document.getElementById('pagesCount').textContent = result.pages;
+                    document.getElementById('processingTime').textContent = result.processing_time;
+                    document.getElementById('downloadBtn').href = result.download_url;
+                    document.getElementById('downloadSummaryBtn').href = result.summary_download_url;
+                    resultSection.style.display = 'block';
+                } else {
+                    // Показываем ошибку
+                    document.getElementById('errorMessage').textContent = result.detail || result.error || 'Неизвестная ошибка';
+                    errorSection.style.display = 'block';
+                }
+            } catch (error) {
+                progressSection.style.display = 'none';
+                submitBtn.disabled = false;
+                document.getElementById('errorMessage').textContent = 'Ошибка соединения с сервером: ' + error.message;
+                errorSection.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
+

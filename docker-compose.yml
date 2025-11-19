@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  screenplay-analyzer:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    container_name: screenplay-analyzer
+
